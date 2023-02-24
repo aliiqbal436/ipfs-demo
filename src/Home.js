@@ -12,6 +12,7 @@ import {
   TextField,
 } from "@mui/material";
 import { create } from "ipfs-http-client";
+import { ReactComponent as LaptopSvg } from "./assets/laptop.svg";
 import ReactJson from "react-json-view";
 import CryptoJS from "crypto-js";
 import axios from "axios";
@@ -29,6 +30,33 @@ const style = {
   border: "2px solid #000",
   boxShadow: 24,
   p: 4,
+};
+
+const btnStyle = {
+  backgroundColor: "#088DCD",
+  color: "white",
+  boxShadow: 24,
+  margin: "10px",
+  mt: "40px",
+  fontFamily: "Poppins",
+  padding: "12px 24px",
+  boxShadow: "none",
+  "&:hover": { backgroundColor: "#1E6F9B", boxShadow: "none" },
+};
+const btnStyle2 = {
+  backgroundColor: "#088DCD",
+  color: "white",
+  boxShadow: 24,
+  mt: "10px",
+  fontFamily: "Poppins",
+  padding: "8px 16px",
+  boxShadow: "none",
+  "&:hover": { backgroundColor: "#1E6F9B", boxShadow: "none" },
+  "&.error": {
+    backgroundColor: "#ffc4c5",
+    color: "#ba181b",
+    boxShadow: "none",
+  },
 };
 
 function Home() {
@@ -58,7 +86,6 @@ function Home() {
         name: fileToUpload.name,
         "replication-min": 0,
         "replication-max": 0,
-       
       });
       console.log(cid);
       await dycriptFile(cid);
@@ -107,23 +134,22 @@ function Home() {
     console.log("ipfsFiles ====", ipfsFiles);
   };
 
-//   useEffect(() => {
-   
-//     if(ipfsFiles.length > 0) localStorage.setItem('files', JSON.stringify(ipfsFiles));
-//     console.log('ipfsFiles ===', ipfsFiles)
-//   }, [ipfsFiles])
+  //   useEffect(() => {
 
-//   useEffect(() => {
-//     const items = JSON.parse(localStorage.getItem('files'));
-//     console.log('items ====', items)
-//     setIpfsFiles(items)
-//   }, [])
+  //     if(ipfsFiles.length > 0) localStorage.setItem('files', JSON.stringify(ipfsFiles));
+  //     console.log('ipfsFiles ===', ipfsFiles)
+  //   }, [ipfsFiles])
+
+  //   useEffect(() => {
+  //     const items = JSON.parse(localStorage.getItem('files'));
+  //     console.log('items ====', items)
+  //     setIpfsFiles(items)
+  //   }, [])
 
   const onShare = (cid, index) => {
     const shareLink = `http://localhost:3000/file/${cid}`;
     setShareLink(shareLink);
     setShareModal(true);
-
   };
 
   useEffect(() => {
@@ -133,21 +159,29 @@ function Home() {
 
   return (
     <div className="App">
-      <div>
+      <div className="app-design">
         <h3>Connected Nodes</h3>
         {/* {peersData.map((peer) => ( */}
-          <Button style={{ margin: "10px" }} variant="contained">
-            Ali Laptop
-          </Button>
-          <Button style={{ margin: "10px" }} variant="contained">
-            Ali Laptop
-          </Button>
+        <Box className="laptop-grid">
+          <Box className="laptop-card">
+            <LaptopSvg />
+            <Button variant="contained" sx={btnStyle}>
+              Ali Laptop
+            </Button>
+          </Box>
+          <Box className="laptop-card">
+            <LaptopSvg />
+            <Button variant="contained" sx={btnStyle}>
+              Ali Laptop
+            </Button>
+          </Box>
+        </Box>
         {/* ))} */}
       </div>
       <Modal open={openShareModal} onClose={() => setShareModal(false)}>
         <Box sx={style}>
           <CopyToClipboard text={shareLink} onCopy={() => alert("Copied")}>
-          <Button variant="contained">{shareLink}</Button>
+            <Button variant="contained">{shareLink}</Button>
           </CopyToClipboard>
         </Box>
       </Modal>
@@ -155,47 +189,54 @@ function Home() {
         <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
           <Box sx={style}>{pinStatus && <ReactJson src={pinStatus} />}</Box>
         </Modal>
-        <Input
-          type="file"
-          onChange={(e) => {
-            console.log("files====", e.target.files);
-            setFileToUpload(e.target.files[0]);
-          }}
-        />
-        <Box
-          component="form"
-          sx={{
-            "& > :not(style)": { m: 1, width: "25ch" },
-          }}
-          noValidate
-          autoComplete="off"
-        >
-        </Box>
-        <Button variant="contained" onClick={() => addFile()}>
-          Upload File
-        </Button>
+        <div className="upload-card">
+          <Input
+            type="file"
+            onChange={(e) => {
+              console.log("files====", e.target.files);
+              setFileToUpload(e.target.files[0]);
+            }}
+          />
+          <Box
+            component="form"
+            sx={{
+              "& > :not(style)": { m: 1, width: "25ch" },
+            }}
+            noValidate
+            autoComplete="off"
+          ></Box>
+          <Button variant="contained" onClick={() => addFile()} sx={btnStyle}>
+            Upload File
+          </Button>
+        </div>
       </div>
-      <ImageList sx={{ width: 500, height: 450 }} cols={3} rowHeight={164}>
+      <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
         {/* {ipfsFiles.map((item, index) => ( */}
-          <ImageListItem>
-            <img
+        <ImageListItem className="image-card">
+          <img
             //   onClick={() => getPinStatus(item.cid)}
-              src={'https://cdnwpedutorenews.gramedia.net/wp-content/uploads/2022/03/08154702/google.jpg'}
-            />
+            src={
+              "https://cdnwpedutorenews.gramedia.net/wp-content/uploads/2022/03/08154702/google.jpg"
+            }
+          />
 
-            <Button
-              variant="contained"
-              color="error"
+          <Button
+            variant="contained"
+            color="error"
+            className="error"
+            sx={btnStyle2}
             //   onClick={() => unPinFile(item.cid, index)}
-            >
-              Delete
-            </Button>
-            <Button variant="contained" 
+          >
+            Delete
+          </Button>
+          <Button
+            variant="contained"
             // onClick={() => onShare(item.cid, index)}
-            >
-              Share
-            </Button>
-          </ImageListItem>
+            sx={btnStyle2}
+          >
+            Share
+          </Button>
+        </ImageListItem>
         {/* ))} */}
       </ImageList>
     </div>
