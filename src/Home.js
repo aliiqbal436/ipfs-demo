@@ -10,6 +10,7 @@ import {
   Modal,
   Box,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { create } from "ipfs-http-client";
@@ -70,6 +71,7 @@ function Home() {
   const [openShareModal, setShareModal] = useState(false);
   const [pinStatus, setPinStatus] = useState({});
   const [openStatusModal, setOpenStatusModal] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
 
   const passPhrase = window.localStorage.getItem("passPhrase") || "";
   const cidsFromLocal = window.localStorage.getItem("cids")?.split(",") || [];
@@ -164,6 +166,7 @@ function Home() {
   };
 
   const getAlreadyUploadedFiles = async () => {
+    setImageLoading(true);
     const files = [];
     for (const cid of cidsFromLocal) {
       const decryptedFile = await decryptLocalStorageFiles(cid);
@@ -172,6 +175,7 @@ function Home() {
       if (!isFileExist) files.push(decryptedFile);
     }
     setIpfsFiles([...ipfsFiles, ...files]);
+    setImageLoading(false);
   };
 
   useEffect(() => {
@@ -239,33 +243,32 @@ function Home() {
             </div>
           </div>
           <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
-            {ipfsFiles?.length === 0
-              ? "Loading files..."
-              : ipfsFiles.map((item, index) => (
-                  <ImageListItem className="image-card">
-                    <img
-                      onClick={() => getPinStatus(item.cid)}
-                      src={item.decryptedFile}
-                    />
+            {imageLoading && <h6>Loading Images...</h6>}
+            {ipfsFiles.map((item, index) => (
+              <ImageListItem className="image-card">
+                <img
+                  onClick={() => getPinStatus(item.cid)}
+                  src={item.decryptedFile}
+                />
 
-                    <Button
-                      variant="contained"
-                      color="error"
-                      className="error"
-                      sx={btnStyle2}
-                      onClick={() => unPinFile(item.cid, index)}
-                    >
-                      Delete
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => onShare(item.cid, index)}
-                      sx={btnStyle2}
-                    >
-                      Share
-                    </Button>
-                  </ImageListItem>
-                ))}
+                <Button
+                  variant="contained"
+                  color="error"
+                  className="error"
+                  sx={btnStyle2}
+                  onClick={() => unPinFile(item.cid, index)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => onShare(item.cid, index)}
+                  sx={btnStyle2}
+                >
+                  Share
+                </Button>
+              </ImageListItem>
+            ))}
           </ImageList>
         </div>
       )}

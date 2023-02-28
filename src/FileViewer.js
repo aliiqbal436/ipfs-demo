@@ -12,7 +12,7 @@ const FileViewer = () => {
   const [message, setMessage] = React.useState(null);
 
   const [fileDetails, setFileDetails] = React.useState({});
-  const key = "Ali Iqbal And Talha Kayani";
+  const key = window.localStorage.getItem("passPhrase");
 
   // const fetchFileDetails = async () => {
   //   try {
@@ -64,30 +64,28 @@ const FileViewer = () => {
   //   }
   // };
 
-
   const dycriptFile = async (cid) => {
     // console.log("encrypcidtedFile cid ===", cid);
-    setLoading(true)
+    setLoading(true);
     const encryptedFile = await axios(
       `http://46.101.133.110:8080/api/v0/cat/${cid}`
     );
 
-    console.log('encryptedFile ====', encryptedFile)
+    console.log("encryptedFile ====", encryptedFile);
 
     // console.log("encryptedFile ===", encryptedFile.data);
     var decryptedFile = CryptoJS.AES.decrypt(encryptedFile.data, key).toString(
       CryptoJS.enc.Latin1
     );
     console.log("decrypted ====", decryptedFile);
-    setImage(decryptedFile)
-    setLoading(false)
-
+    setImage(decryptedFile);
+    setLoading(false);
   };
 
   React.useEffect(() => {
-    if(hash) {
-      dycriptFile(hash)
-    };
+    if (hash) {
+      dycriptFile(hash);
+    }
   }, [hash]);
 
   // React.useEffect(() => {
@@ -95,7 +93,6 @@ const FileViewer = () => {
   //     fileReaderFromIPFS();
   //   }
   // }, [fileDetails]);
-
 
   return (
     <div>
