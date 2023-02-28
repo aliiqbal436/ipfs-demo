@@ -11,6 +11,7 @@ import {
   Box,
   TextField,
 } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { create } from "ipfs-http-client";
 import { ReactComponent as LaptopSvg } from "./assets/laptop.svg";
 import ReactJson from "react-json-view";
@@ -18,8 +19,8 @@ import CryptoJS from "crypto-js";
 import axios from "axios";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
-const cluster = new Cluster("http://localhost:9094");
-const client = create(new URL("http://127.0.0.1:5001"));
+const cluster = new Cluster("http://46.101.133.110:9094");
+const client = create(new URL("http://46.101.133.110:5001"));
 
 const style = {
   position: "absolute",
@@ -61,6 +62,7 @@ const btnStyle2 = {
 
 function Home() {
   const [ipfsFiles, setIpfsFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [fileToUpload, setFileToUpload] = useState();
   const [peersData, setPeersData] = useState([]);
   const [shareLink, setShareLink] = useState("");
@@ -69,6 +71,7 @@ function Home() {
   const [openStatusModal, setOpenStatusModal] = useState(false);
   const key = "Ali Iqbal And Talha Kayani";
   const addFile = async () => {
+    setLoading(true);
     const reader = new FileReader();
     let chunk = undefined;
     reader.onloadend = async (event) => {
@@ -84,41 +87,43 @@ function Home() {
       const { cid } = await cluster.add(file, {
         "cid-version": 1,
         name: fileToUpload.name,
-        "replication-min": 0,
-        "replication-max": 0,
+        local: true,
+        recursive: true,
       });
       console.log(cid);
       await dycriptFile(cid);
+      setLoading(false);
     };
     reader.readAsDataURL(fileToUpload);
   };
 
   const dycriptFile = async (cid) => {
     const encryptedFile = await axios(
-      `http://localhost:8080/api/v0/cat/${cid}`
+      `http://46.101.133.110:8080/api/v0/cat/${cid}`
     );
 
     // console.log("encryptedFile ===", encryptedFile.data);
     var decryptedFile = CryptoJS.AES.decrypt(encryptedFile.data, key).toString(
       CryptoJS.enc.Latin1
     );
-    console.log("decrypted ====", decryptedFile);
-    setIpfsFiles([...ipfsFiles, { decryptedFile, cid }]);
+    console.log("ipfsFiles ====", ipfsFiles);
+    const isFileExist = ipfsFiles.find((f) => f.cid === cid);
+    console.log('isFileExist ===', isFileExist)
+    if (!isFileExist) setIpfsFiles([...ipfsFiles, { decryptedFile, cid }]);
   };
 
   const getPeerList = async () => {
     const peers = await cluster.peerList();
+    console.log("peers ====", peers);
     setPeersData(peers);
     // setOpenStatusModal(true)
     console.log("peers ===", peers);
   };
 
-  const readPin = async () => {
-    const file = await client.cat(
-      "bafybeiaonkvnfms2ui4blgg24dfehmmfcfoytycwzlpwtt3vrsnp3d3xiu"
-    );
-    console.log("peers ===", file);
-  };
+  // const readPin = async (cid) => {
+  //   const file = await client.cat(cid);
+  //   console.log("peers ===", file);
+  // };
 
   const getPinStatus = async (cid) => {
     const status = await cluster.status(cid);
@@ -161,22 +166,16 @@ function Home() {
     <div className="App">
       <div className="app-design">
         <h3>Connected Nodes</h3>
-        {/* {peersData.map((peer) => ( */}
         <Box className="laptop-grid">
-          <Box className="laptop-card">
-            <LaptopSvg />
-            <Button variant="contained" sx={btnStyle}>
-              Ali Laptop
-            </Button>
-          </Box>
-          <Box className="laptop-card">
-            <LaptopSvg />
-            <Button variant="contained" sx={btnStyle}>
-              Ali Laptop
-            </Button>
-          </Box>
+          {peersData.map((peer) => (
+            <Box className="laptop-card">
+              <LaptopSvg />
+              <Button variant="contained" sx={btnStyle}>
+                {peer.peerName}
+              </Button>
+            </Box>
+          ))}
         </Box>
-        {/* ))} */}
       </div>
       <Modal open={openShareModal} onClose={() => setShareModal(false)}>
         <Box sx={style}>
@@ -205,39 +204,42 @@ function Home() {
             noValidate
             autoComplete="off"
           ></Box>
-          <Button variant="contained" onClick={() => addFile()} sx={btnStyle}>
+          <LoadingButton
+            loading={loading}
+            variant="contained"
+            onClick={() => addFile()}
+            sx={btnStyle}
+          >
             Upload File
-          </Button>
+          </LoadingButton>
         </div>
       </div>
       <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
-        {/* {ipfsFiles.map((item, index) => ( */}
-        <ImageListItem className="image-card">
-          <img
-            //   onClick={() => getPinStatus(item.cid)}
-            src={
-              "https://cdnwpedutorenews.gramedia.net/wp-content/uploads/2022/03/08154702/google.jpg"
-            }
-          />
+        {ipfsFiles.map((item, index) => (
+          <ImageListItem className="image-card">
+            <img
+              onClick={() => getPinStatus(item.cid)}
+              src={item.decryptedFile}
+            />
 
-          <Button
-            variant="contained"
-            color="error"
-            className="error"
-            sx={btnStyle2}
-            //   onClick={() => unPinFile(item.cid, index)}
-          >
-            Delete
-          </Button>
-          <Button
-            variant="contained"
-            // onClick={() => onShare(item.cid, index)}
-            sx={btnStyle2}
-          >
-            Share
-          </Button>
-        </ImageListItem>
-        {/* ))} */}
+            <Button
+              variant="contained"
+              color="error"
+              className="error"
+              sx={btnStyle2}
+              onClick={() => unPinFile(item.cid, index)}
+            >
+              Delete
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => onShare(item.cid, index)}
+              sx={btnStyle2}
+            >
+              Share
+            </Button>
+          </ImageListItem>
+        ))}
       </ImageList>
     </div>
   );

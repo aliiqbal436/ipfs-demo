@@ -69,7 +69,7 @@ const FileViewer = () => {
     // console.log("encrypcidtedFile cid ===", cid);
     setLoading(true)
     const encryptedFile = await axios(
-      `https://2380-39-46-249-163.in.ngrok.io/api/v0/cat/${cid}`
+      `http://46.101.133.110:8080/api/v0/cat/${cid}`
     );
 
     console.log('encryptedFile ====', encryptedFile)
