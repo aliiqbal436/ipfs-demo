@@ -18,6 +18,7 @@ import ReactJson from "react-json-view";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import PassPhraseModal from "./PassPhraseModal";
 
 const cluster = new Cluster("http://46.101.133.110:9094");
 const client = create(new URL("http://46.101.133.110:5001"));
@@ -69,7 +70,10 @@ function Home() {
   const [openShareModal, setShareModal] = useState(false);
   const [pinStatus, setPinStatus] = useState({});
   const [openStatusModal, setOpenStatusModal] = useState(false);
-  const key = "Ali Iqbal And Talha Kayani";
+
+  const passPhrase = window.localStorage.getItem("passPhrase") || "";
+  const cidsFromLocal = window.localStorage.getItem("cids")?.split(",") || [];
+  const [key, setKey] = React.useState(passPhrase);
   const addFile = async () => {
     setLoading(true);
     const reader = new FileReader();
@@ -90,7 +94,8 @@ function Home() {
         local: true,
         recursive: true,
       });
-      console.log(cid);
+
+      window.localStorage.setItem("cids", [...cidsFromLocal, cid]);
       await dycriptFile(cid);
       setLoading(false);
     };
@@ -106,10 +111,21 @@ function Home() {
     var decryptedFile = CryptoJS.AES.decrypt(encryptedFile.data, key).toString(
       CryptoJS.enc.Latin1
     );
-    console.log("ipfsFiles ====", ipfsFiles);
+    console.log("ipfsFiles testing--- ====", ipfsFiles);
     const isFileExist = ipfsFiles.find((f) => f.cid === cid);
-    console.log('isFileExist ===', isFileExist)
+    console.log("isFileExist testing--- ===", isFileExist, !isFileExist);
     if (!isFileExist) setIpfsFiles([...ipfsFiles, { decryptedFile, cid }]);
+  };
+
+  const decryptLocalStorageFiles = async (cid) => {
+    const encryptedFile = await axios(
+      `http://46.101.133.110:8080/api/v0/cat/${cid}`
+    );
+
+    var decryptedFile = CryptoJS.AES.decrypt(encryptedFile.data, key).toString(
+      CryptoJS.enc.Latin1
+    );
+    return { decryptedFile, cid };
   };
 
   const getPeerList = async () => {
@@ -136,20 +152,10 @@ function Home() {
     const response = await cluster.unpin(cid);
     ipfsFiles.splice(index, 1);
     setIpfsFiles([...ipfsFiles]);
+    cidsFromLocal.splice(index, 1);
+    window.localStorage.setItem("cids", cidsFromLocal);
     console.log("ipfsFiles ====", ipfsFiles);
   };
-
-  //   useEffect(() => {
-
-  //     if(ipfsFiles.length > 0) localStorage.setItem('files', JSON.stringify(ipfsFiles));
-  //     console.log('ipfsFiles ===', ipfsFiles)
-  //   }, [ipfsFiles])
-
-  //   useEffect(() => {
-  //     const items = JSON.parse(localStorage.getItem('files'));
-  //     console.log('items ====', items)
-  //     setIpfsFiles(items)
-  //   }, [])
 
   const onShare = (cid, index) => {
     const shareLink = `http://localhost:3000/file/${cid}`;
@@ -157,90 +163,112 @@ function Home() {
     setShareModal(true);
   };
 
+  const getAlreadyUploadedFiles = async () => {
+    const files = [];
+    for (const cid of cidsFromLocal) {
+      const decryptedFile = await decryptLocalStorageFiles(cid);
+      const isFileExist = files.find((f) => f.cid === cid);
+
+      if (!isFileExist) files.push(decryptedFile);
+    }
+    setIpfsFiles([...ipfsFiles, ...files]);
+  };
+
   useEffect(() => {
-    // getPeersStat()
+    getAlreadyUploadedFiles();
     getPeerList();
   }, []);
 
   return (
     <div className="App">
-      <div className="app-design">
-        <h3>Connected Nodes</h3>
-        <Box className="laptop-grid">
-          {peersData.map((peer) => (
-            <Box className="laptop-card">
-              <LaptopSvg />
-              <Button variant="contained" sx={btnStyle}>
-                {peer.peerName}
-              </Button>
+      {!passPhrase && !key ? (
+        <PassPhraseModal openModal={true} setKey={setKey} />
+      ) : (
+        <div>
+          <div className="app-design">
+            <h3>Connected Nodes</h3>
+            <Box className="laptop-grid">
+              {peersData.map((peer) => (
+                <Box className="laptop-card">
+                  <LaptopSvg />
+                  <Button variant="contained" sx={btnStyle}>
+                    {peer.peerName}
+                  </Button>
+                </Box>
+              ))}
             </Box>
-          ))}
-        </Box>
-      </div>
-      <Modal open={openShareModal} onClose={() => setShareModal(false)}>
-        <Box sx={style}>
-          <CopyToClipboard text={shareLink} onCopy={() => alert("Copied")}>
-            <Button variant="contained">{shareLink}</Button>
-          </CopyToClipboard>
-        </Box>
-      </Modal>
-      <div>
-        <Modal open={openStatusModal} onClose={() => setOpenStatusModal(false)}>
-          <Box sx={style}>{pinStatus && <ReactJson src={pinStatus} />}</Box>
-        </Modal>
-        <div className="upload-card">
-          <Input
-            type="file"
-            onChange={(e) => {
-              console.log("files====", e.target.files);
-              setFileToUpload(e.target.files[0]);
-            }}
-          />
-          <Box
-            component="form"
-            sx={{
-              "& > :not(style)": { m: 1, width: "25ch" },
-            }}
-            noValidate
-            autoComplete="off"
-          ></Box>
-          <LoadingButton
-            loading={loading}
-            variant="contained"
-            onClick={() => addFile()}
-            sx={btnStyle}
-          >
-            Upload File
-          </LoadingButton>
-        </div>
-      </div>
-      <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
-        {ipfsFiles.map((item, index) => (
-          <ImageListItem className="image-card">
-            <img
-              onClick={() => getPinStatus(item.cid)}
-              src={item.decryptedFile}
-            />
+          </div>
+          <Modal open={openShareModal} onClose={() => setShareModal(false)}>
+            <Box sx={style}>
+              <CopyToClipboard text={shareLink} onCopy={() => alert("Copied")}>
+                <Button variant="contained">{shareLink}</Button>
+              </CopyToClipboard>
+            </Box>
+          </Modal>
+          <div>
+            <Modal
+              open={openStatusModal}
+              onClose={() => setOpenStatusModal(false)}
+            >
+              <Box sx={style}>{pinStatus && <ReactJson src={pinStatus} />}</Box>
+            </Modal>
+            <div className="upload-card">
+              <Input
+                type="file"
+                onChange={(e) => {
+                  console.log("files====", e.target.files);
+                  setFileToUpload(e.target.files[0]);
+                }}
+              />
+              <Box
+                component="form"
+                sx={{
+                  "& > :not(style)": { m: 1, width: "25ch" },
+                }}
+                noValidate
+                autoComplete="off"
+              ></Box>
+              <LoadingButton
+                loading={loading}
+                variant="contained"
+                onClick={() => addFile()}
+                sx={btnStyle}
+              >
+                Upload File
+              </LoadingButton>
+            </div>
+          </div>
+          <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
+            {ipfsFiles?.length === 0
+              ? "Loading files..."
+              : ipfsFiles.map((item, index) => (
+                  <ImageListItem className="image-card">
+                    <img
+                      onClick={() => getPinStatus(item.cid)}
+                      src={item.decryptedFile}
+                    />
 
-            <Button
-              variant="contained"
-              color="error"
-              className="error"
-              sx={btnStyle2}
-              onClick={() => unPinFile(item.cid, index)}
-            >
-              Delete
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => onShare(item.cid, index)}
-              sx={btnStyle2}
-            >
-              Share
-            </Button>
-          </ImageListItem>
-        ))}
-      </ImageList>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      className="error"
+                      sx={btnStyle2}
+                      onClick={() => unPinFile(item.cid, index)}
+                    >
+                      Delete
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => onShare(item.cid, index)}
+                      sx={btnStyle2}
+                    >
+                      Share
+                    </Button>
+                  </ImageListItem>
+                ))}
+          </ImageList>
+        </div>
+      )}
     </div>
   );
 }
