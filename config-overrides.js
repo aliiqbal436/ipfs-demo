@@ -17,8 +17,8 @@ module.exports = function override(webpackConfig) {
   // Polyfill Buffer.
   webpackConfig.plugins.push(
     new webpack.ProvidePlugin({
-      process: 'process/browser',
-      Buffer: ['buffer', 'Buffer'],
+      process: "process/browser",
+      Buffer: ["buffer", "Buffer"],
     })
   );
 

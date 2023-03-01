@@ -1,5 +1,4 @@
 import React from "react";
-import Modal from "@mui/material/Modal";
 
 const PassPhraseModal = ({ openModal, setKey }) => {
   const [passPhrase, setPassPhrase] = React.useState("");

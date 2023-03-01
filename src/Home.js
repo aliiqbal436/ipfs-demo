@@ -20,6 +20,7 @@ import CryptoJS from "crypto-js";
 import axios from "axios";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import PassPhraseModal from "./PassPhraseModal";
+import { decrypt, encrypt } from "./encryption-decryption";
 
 const cluster = new Cluster("http://46.101.133.110:9094");
 const client = create(new URL("http://46.101.133.110:5001"));
@@ -160,7 +161,17 @@ function Home() {
   };
 
   const onShare = (cid, index) => {
-    const shareLink = `http://localhost:3000/file/${cid}`;
+    const encryptPassPhrase = encrypt(key);
+    console.log(
+      "🚀 ~ file: Home.js:164 ~ onShare ~ encryptPassPhrase:",
+      encryptPassPhrase
+    );
+    const decryptedPassPhrase = decrypt(encryptPassPhrase.replace("-", "/"));
+    console.log(
+      "🚀 ~ file: Home.js:170 ~ onShare ~ decryptedPassPhrase:",
+      decryptedPassPhrase
+    );
+    const shareLink = `${REACT_APP_URL}/file/${cid}/${encryptPassPhrase}`;
     setShareLink(shareLink);
     setShareModal(true);
   };

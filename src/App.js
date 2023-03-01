@@ -12,7 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           {/* <Route path="/files" element={<Files />} /> */}
-          <Route path="/file/:hash" element={<FileViewer />} />
+          <Route path="/file/:hash/:pass" element={<FileViewer />} />
         </Routes>
       </Suspense>
     </Router>

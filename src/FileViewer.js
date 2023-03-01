@@ -3,16 +3,19 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 // import { decryptFileViewerHash } from "../../helpers/helper";
 import CryptoJS from "crypto-js";
+import { decrypt } from "./encryption-decryption";
 
 const FileViewer = () => {
   const params = useParams();
-  const { hash } = params;
+  const { hash, pass } = params;
   const [loading, setLoading] = React.useState(true);
   const [image, setImage] = React.useState(null);
   const [message, setMessage] = React.useState(null);
 
   const [fileDetails, setFileDetails] = React.useState({});
-  const key = window.localStorage.getItem("passPhrase");
+  // const key = window.localStorage.getItem("passPhrase");
+  const key = decrypt(pass.replace("-", "/"));
+  console.log("🚀 ~ file: FileViewer.js:17 ~ FileViewer ~ key:", key);
 
   // const fetchFileDetails = async () => {
   //   try {
@@ -74,6 +77,7 @@ const FileViewer = () => {
     console.log("encryptedFile ====", encryptedFile);
 
     // console.log("encryptedFile ===", encryptedFile.data);
+
     var decryptedFile = CryptoJS.AES.decrypt(encryptedFile.data, key).toString(
       CryptoJS.enc.Latin1
     );
