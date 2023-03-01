@@ -171,7 +171,7 @@ function Home() {
       "🚀 ~ file: Home.js:170 ~ onShare ~ decryptedPassPhrase:",
       decryptedPassPhrase
     );
-    const shareLink = `${REACT_APP_URL}/file/${cid}/${encryptPassPhrase}`;
+    const shareLink = `${process.env.REACT_APP_URL}/file/${cid}/${encryptPassPhrase}`;
     setShareLink(shareLink);
     setShareModal(true);
   };
