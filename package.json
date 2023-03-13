@@ -5,6 +5,7 @@
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
+    "@koale/useworker": "^4.0.2",
     "@mui/lab": "^5.0.0-alpha.120",
     "@mui/material": "^5.11.10",
     "@nftstorage/ipfs-cluster": "^5.0.1",
@@ -26,14 +27,19 @@
     "react-dom": "^18.2.0",
     "react-json-formatter": "^0.3.2",
     "react-json-view": "^1.21.3",
+    "react-redux": "^8.0.5",
     "react-router-dom": "^6.8.1",
     "react-scripts": "5.0.1",
+    "redux": "^4.2.1",
+    "redux-saga": "^1.2.2",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
+    "tiny-async-pool": "^2.1.0",
     "to-readable-stream": "^4.0.0",
     "url": "^0.11.0",
     "util": "^0.12.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "workerize-loader": "^2.0.2"
   },
   "scripts": {
     "start": "react-app-rewired start",
@@ -60,6 +66,8 @@
     ]
   },
   "devDependencies": {
-    "react-app-rewired": "^2.2.1"
+    "react-app-rewired": "^2.2.1",
+    "worker-loader": "^3.0.8",
+    "worker-plugin": "^5.0.1"
   }
 }

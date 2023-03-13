@@ -1,4 +1,5 @@
 const webpack = require("webpack");
+const WorkerPlugin = require("worker-plugin");
 
 module.exports = function override(webpackConfig) {
   // Disable resolving ESM paths as fully specified.
@@ -15,10 +16,18 @@ module.exports = function override(webpackConfig) {
   webpackConfig.ignoreWarnings = [/Failed to parse source map/];
 
   // Polyfill Buffer.
+  webpackConfig.plugins.push(new WorkerPlugin());
+  // webpackConfig.module.rules.push({
+  //   test: /\.worker\.js$/,
+  //   use: {
+  //     loader: "worker-loader",
+  //   },
+  // });
+
   webpackConfig.plugins.push(
     new webpack.ProvidePlugin({
-      process: 'process/browser',
-      Buffer: ['buffer', 'Buffer'],
+      process: "process/browser",
+      Buffer: ["buffer", "Buffer"],
     })
   );
 

@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 import { Cluster } from "@nftstorage/ipfs-cluster";
+import { useWorker, WORKER_STATUS } from "@koale/useworker";
+// import MyWorker from "./fileWorker";
+import { useDispatch, useSelector } from "react-redux";
+import { uploadFile } from "./actions";
+
 import {
   Input,
   Button,
@@ -62,7 +67,28 @@ const btnStyle2 = {
   },
 };
 
+const addFileToIpfs = async (chunk, fileToUpload, key) => {
+  console.log("cid ===", fileToUpload);
+
+  return "cid";
+};
+
+// const numbers = [...Array(5000000)].map((e) => ~~(Math.random() * 1000000));
+// const sortNumbers = (nums) => nums.sort();
+
+const CHUNK_SIZE = (1024 * 1024) * 10; // 1MB
+
+
+export function uploadFileSaga() {
+  return {
+    type: "UPLOAD_FILE",
+  }
+}
+
 function Home() {
+  const dispatch = useDispatch();
+  const counter = useSelector((state) => state.fileReducers);
+
   const [ipfsFiles, setIpfsFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fileToUpload, setFileToUpload] = useState();
@@ -72,36 +98,61 @@ function Home() {
   const [pinStatus, setPinStatus] = useState({});
   const [openStatusModal, setOpenStatusModal] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+  const [fileArray, setFileArray] = useState([])
+  // const [addFileIpfs] = useWorker(addFileToIpfs);
 
   const passPhrase = window.localStorage.getItem("passPhrase") || "";
   const cidsFromLocal = window.localStorage.getItem("cids")?.split(",") || [];
   const [key, setKey] = React.useState(passPhrase);
-  const addFile = async () => {
-    setLoading(true);
-    const reader = new FileReader();
-    let chunk = undefined;
-    reader.onloadend = async (event) => {
-      chunk = event.target.result;
+  const fileWorker = useMemo(
+    () => new Worker(new URL("file.worker.js", import.meta.url)),
+    []
+  );
 
-      const encrypted = CryptoJS.AES.encrypt(chunk, key);
-      console.log("encrypted ===", encrypted);
-      let blob = new Blob([encrypted], {
-        type: "data:application/octet-stream,",
-      });
-      var file = new File([blob], fileToUpload.name);
-
-      const { cid } = await cluster.add(file, {
-        "cid-version": 1,
-        name: fileToUpload.name,
-        local: true,
-        recursive: true,
-      });
-
-      window.localStorage.setItem("cids", [...cidsFromLocal, cid]);
-      await dycriptFile(cid);
-      setLoading(false);
+  useEffect(() => {
+    // if (window.Worker) {
+    fileWorker.onmessage = (e) => {
+      console.log("fileWorker === onmessage", e.data);
+      
     };
-    reader.readAsDataURL(fileToUpload);
+    // }
+  }, [fileWorker]);
+
+  const addFile = async () => {
+    // 
+    // if (window.Worker) {
+    // fileWorker.postMessage({fileToUpload, key});
+
+    // const { fileToUpload, key } = data;
+
+    let offset = 0;
+    let index = 0
+
+
+    while (offset < fileToUpload.size) {
+      const nextChunk = fileToUpload.slice(offset, offset + CHUNK_SIZE);
+      console.log("offset ===", offset);
+      fileWorker.postMessage({
+        fileData: nextChunk,
+        key,
+        fileName: fileToUpload.name,
+        index,
+      });
+      offset += CHUNK_SIZE;
+      index++
+    }
+
+    // }
+
+    // setLoading(true);
+
+    //   addFileWorker(chunk, key, fileToUpload.name, CryptoJS).then((data) => console.log("data====", data))
+
+    //   // console.log('cid ===', cid)
+
+    //   // window.localStorage.setItem("cids", [...cidsFromLocal, cid]);
+    //   // await dycriptFile(cid);
+    //   // setLoading(false);
   };
 
   const dycriptFile = async (cid) => {
@@ -243,15 +294,21 @@ function Home() {
             </div>
           </div>
           <ImageList sx={{ width: "100%", minHeight: 450 }} cols={6}>
-            {imageLoading && <h6>Loading Images...</h6>}
-            {ipfsFiles.map((item, index) => (
-              <ImageListItem className="image-card">
-                <img
+            {/* {imageLoading && <h6>Loading Images...</h6>} */}
+            {/* {ipfsFiles.map((item, index) => ( */}
+            <ImageListItem className="image-card">
+              {/* <img
                   onClick={() => getPinStatus(item.cid)}
                   src={item.decryptedFile}
-                />
+                /> */}
+              <img
+                src={
+                  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAACDVBMVEUAAAD///////////////////////////////////////////////////////////////////////////////8nbP8obf8pbf8qbv8rb/8sb/8tcP8ucf8vcf8vcv8xc/8zdP81df81dv82dv83d/84eP85eP86ef87ev89e/8+fP8/fP9Aff9Bfv9Cfv9Df/9EgP9FgP9Ggf9Hgv9Jg/9LhP9Mhf9Nhv9Oh/9Ph/9RiP9Rif9Sif9Ui/9Vi/9WjP9Xjf9Yjf9aj/9dkf9ekf9ilP9jlf9llv9nl/9omP9rmv9sm/9tnP9vnf9wnv9yn/91of92ov93o/94o/98pv9/qP+Bqf+Cqv+Eq/+FrP+Hrf+Irv+Jr/+Kr/+Msf+Nsv+Stf+Ttf+Ttv+Utv+Vt/+WuP+XuP+Zuf+Zuv+hv/+kwf+lwv+mwv+nw/+oxP+pxP+pxf+qxf+rxv+yy/+0zP+1zf+3zv+4z/+60P+70f+90v+/0/+/1P/B1f/D1v/E1//F1//F2P/G2P/H2f/I2v/J2v/K2//L3P/P3v/Q3//R4P/S4P/V4v/V4//W4//X5P/Y5P/b5v/b5//c5//d6P/e6f/f6f/g6v/h6//j7P/k7f/l7f/m7v/q8f/r8f/u8//w9f/x9f/x9v/z9//0+P/2+f/3+f/3+v/4+v/5+//6/P/8/f/9/v/+/v////9uCbVDAAAAFXRSTlMABAU4Ozw9PpSWl5ilp6ip4+Tl/P6nIcp/AAAAAWJLR0SuuWuTpwAAAh5JREFUOMtjYGBgYOcXEl6HAYSF+FgZQICJex1OwMkEVIAi3+Xh1ozM5wKaj8xfpBwcITsbWYSNgR+JtzpJYvU6jbAVSEK8DEIITpOZqnxItISWfgVCTJAB7v4ZXpKRC9uMNCqXJci6TID7hQFMrV2zJE7abTKQFesDJGb7SYTOX7sGLAVWUKCgrGZcDeaDFaxb12alqC6XDlMwTyKnRLJ1HbKCddNEc0skJkAVdEssXatRiKqgVmLlatUqqILVpuaOEnLJy4GsIhONuHlAOldVwtJWcwnMDb2i4dPKdHVKV3uqRCdYqU9psVDOmh0vUQN35FTRhevWLU+V0FeZBdTtpSQRvgAoKtuMqmBdpKxvKYjXJ+o+cx0WBRPFO6ABHuesMheLghIdePiutc7AoqBLchZchVMSFgUr9HTS8sEgL1C0E1XBRNGUeeV6OlFONjbqSjY2Nv7mKjnzMyXqYQrW2OsYS8smLkOE5OpsFSkdQ6PlUAU9EgtXq6MFdZ3EkpVKNVAFc8TKW6QbURVMFK1slOyGuSFdUkLOoQtZwSRXaRmpKLgj1y1eMjdIImguTMHCCAnvGcuXQhIMPMl1O8hnrOy31GtfnaNi3oRIcohEu7ZY20DZK0DGTCV7NVKi5UVK40vDJVatU/dfgCTEw8AsgsSdLx+TKjUdOeMAsycnMr/BzrIcmc8ByrycuDMvByM4f7PyCmLL/gK8LEBJALYsGEdXEyupAAAAAElFTkSuQmCC"
+                }
+                width={500}
+              />
 
-                <Button
+              {/* <Button
                   variant="contained"
                   color="error"
                   className="error"
@@ -266,9 +323,9 @@ function Home() {
                   sx={btnStyle2}
                 >
                   Share
-                </Button>
-              </ImageListItem>
-            ))}
+                </Button> */}
+            </ImageListItem>
+            {/* ))} */}
           </ImageList>
         </div>
       )}
