@@ -8,7 +8,7 @@
     "@koale/useworker": "^4.0.2",
     "@mui/lab": "^5.0.0-alpha.120",
     "@mui/material": "^5.11.10",
-    "@nftstorage/ipfs-cluster": "^5.0.1",
+    "@nftstorage/ipfs-cluster": "github:aliiqbal436/ipfs-cluster",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",

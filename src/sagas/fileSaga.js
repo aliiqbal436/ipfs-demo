@@ -20,70 +20,44 @@ function getApi() {
     });
 }
 
-function uploadToCluster(file, filename, index) {
-  client.add(file, {
+async function uploadToCluster(chunk, filename) {
+  // console.log("uploadToCluster ====", filename);
+  return cluster.add(chunk, {
     "cid-version": 1,
-    progress: (bytes) => {
-      console.log(`Uploaded ==== ${index} ${bytes}/${CHUNK_SIZE} bytes`);
-    },
+    // progress: (bytes) => {
+    //   console.log(`Uploaded ${bytes}/${fileSize} bytes`);
+    // },
+    replicationFactorMax: 5,
+    replicationFactorMin: 2,
+    // onUploadProgress:(data) => {
+    //   // console.log('data =====', data)
+    //   var percentCompleted = Math.round((data.loaded * 100) / data.total)
+    //   // console.log(`Uploaded ======= ${index}`, percentCompleted)
+    //   // console.log(`Uploaded ${data.bytes/fileSize} bytes`);
+    // },
     name: filename,
     //   local: true,
     //   recursive: true,
   });
 }
 
-const CHUNK_SIZE = 1024 * 1024 * 20; // 1MB
-console.log('CHUNK_SIZE ===', CHUNK_SIZE)
 function* uploadFile(action) {
   try {
-    console.log("action ====", action);
-    const clusterArray = [];
-    const cidArray = [];
-    const { fileToUpload, key } = action.payload;
-    let offset = 0;
-    let index = 0;
+    const { chunk, index, filename, fileSize } = action.payload;
+    // console.log("chunk ====", chunk);
+    // const userData = yield getApi();
+    // console.log(`userData ====`, userData);
 
-    while (offset < fileToUpload.size) {
-      const nextChunk = fileToUpload.slice(offset, offset + CHUNK_SIZE);
-      console.log("offset ===", offset);
+    const chunkData = yield uploadToCluster(chunk, filename);
 
-      //   const {fileData, key, fileName, index} = data;
-      const reader = new FileReader();
-      let chunk = undefined;
-      reader.onload = function* (event) {
-        chunk = event.target.result;
-        // console.log("chunk ---", chunk);
-        const encrypted = CryptoJS.AES.encrypt(chunk, key);
-        // console.log("encrypted ===", encrypted);
-        let blob = new Blob([encrypted], {
-          type: "data:application/octet-stream,",
-        });
-
-        // console.log("encryypted blob ===", blob);
-
-        var file = new File([blob], fileToUpload.name);
-        console.log('file =====', file)
-        // yield call(uploadToCluster, file, fileToUpload.name, index);
-        // clusterArray.push({ file, fileName: fileToUpload.name, index });
-        // console.log('file ====', file)
-        // fork(uploadToCluster, file, fileToUpload.name, index);
-
-        console.log("encryypted file ===", file);
-
-        // self.postMessage({file, index});
-      };
-
-      reader.onloadend = reader.readAsDataURL(nextChunk);
-      offset += CHUNK_SIZE;
-      index++;
-    }
-
+    // console.log(`uploadFile data ====`, chunkData);
+    // return data
     // console.log("clusterArray ====", clusterArray);
 
     // const returnArray = yield clusterArray.map((p) =>
     //   call(fetch, p.file, p.fileName, p.index)
     // );
-
+    // return data;
     // console.log("returnArray ====", returnArray);
   } catch (e) {
     yield put({ type: "UPLOAD_FILE_STATUS", message: e.message });

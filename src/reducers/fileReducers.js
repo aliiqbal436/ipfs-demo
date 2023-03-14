@@ -4,6 +4,8 @@ import {
    
   const initialState = {
     value: 0,
+    uploadingPercentage: 0,
+    uploadinFile: {},
     loading: null,
     error: null,
   };

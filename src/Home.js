@@ -2,10 +2,10 @@ import React, { useEffect, useState, useMemo } from "react";
 import logo from "./logo.svg";
 import "./App.css";
 import { Cluster } from "@nftstorage/ipfs-cluster";
-import { useWorker, WORKER_STATUS } from "@koale/useworker";
 // import MyWorker from "./fileWorker";
 import { useDispatch, useSelector } from "react-redux";
 import { uploadFile } from "./actions";
+import asyncPool from "tiny-async-pool";
 
 import {
   Input,
@@ -76,14 +76,20 @@ const addFileToIpfs = async (chunk, fileToUpload, key) => {
 // const numbers = [...Array(5000000)].map((e) => ~~(Math.random() * 1000000));
 // const sortNumbers = (nums) => nums.sort();
 
-const CHUNK_SIZE = (1024 * 1024) * 10; // 1MB
+const CHUNK_SIZE = 1024 * 1024 * 10; // 10MB
 
-
-export function uploadFileSaga() {
+export function uploadFileSaga(data) {
   return {
     type: "UPLOAD_FILE",
-  }
+    payload: data,
+  };
 }
+
+// Total chunks to upload
+// Prepare array of 4 to upload
+// Empty array after upload
+// Update total chunks are proccecing.
+// Update totalChunksAreUploaded
 
 function Home() {
   const dispatch = useDispatch();
@@ -98,7 +104,12 @@ function Home() {
   const [pinStatus, setPinStatus] = useState({});
   const [openStatusModal, setOpenStatusModal] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
-  const [fileArray, setFileArray] = useState([])
+  const [fileArray, setFileArray] = useState([]);
+  const [uploadingFile, setUploadingFile] = useState([]);
+  const [uploadingFileTotalChunks, setUploadingFileChunks] = useState(0);
+  // const [uploadedChunks, setUploadedChunks] = useState(0);
+  const [totalChunksToUpload, setTotalChunksToUpload] = useState(0);
+
   // const [addFileIpfs] = useWorker(addFileToIpfs);
 
   const passPhrase = window.localStorage.getItem("passPhrase") || "";
@@ -111,36 +122,91 @@ function Home() {
 
   useEffect(() => {
     // if (window.Worker) {
-    fileWorker.onmessage = (e) => {
-      console.log("fileWorker === onmessage", e.data);
-      
+    fileWorker.onmessage = async (e) => {
+      // console.log("onmessage data =====", e.data);
+      dispatch(uploadFileSaga(e.data));
+      // console.log('data ====', data)
     };
+
+    // console.log("uploadingFile ===", uploadingFile);
+    // console.log("uploadingFileTotalChunks ===", uploadingFileTotalChunks);
+    // console.log("totalChunksToUpload ===", e.data.totalChunks);
+
+    // if (
+    //   uploadingFile.length < 4 &&
+    //   uploadingFileTotalChunks < e.data.totalChunks
+    // ) {
+
+    //   let fileArray = uploadingFile;
+    //   fileArray.push(e.data);
+    //   setUploadingFile(fileArray);
+    //   const updatedUploadChunks = uploadingFileTotalChunks + 1;
+    //   setUploadingFileChunks(updatedUploadChunks);
+    // }
+    // console.log("uploadingFile ====", uploadingFile);
+    // console.log("uploadingFileTotalChunks ====", uploadingFileTotalChunks);
+    // console.log("totalChunksToUpload ====", e.data.totalChunks);
+
+    // if (uploadingFile.length === 4) {
+    //   asyncPool(2, uploadingFile, async (fileData, index) => {
+    // const response = await axios.post(fileUrls[index], formData, {
+    //   onUploadProgress: progressEvent => {
+    //     const progress = (progressEvent.loaded / progressEvent.total) * 100;
+    //     console.log(`File ${index+1} upload progress: ${progress}%`);
+    //   }
+    // });
+    // return response.data;
+    // console.log("encryypted file ===", file);
+    //   const { cid } = await cluster.add(fileData.chunk, {
+    //     "cid-version": 1,
+    //     name: fileToUpload.name,
+    //     local: true,
+    //     recursive: true,
+    //   });
+    //   console.log("cid ===", cid);
+    // }).then((data) => {
+    //   console.log(data);
+    // });
+    // }
+    // };
     // }
   }, [fileWorker]);
 
   const addFile = async () => {
-    // 
+    //
     // if (window.Worker) {
     // fileWorker.postMessage({fileToUpload, key});
 
     // const { fileToUpload, key } = data;
 
     let offset = 0;
-    let index = 0
+    let index = 0;
+    const totalChunks = Math.ceil(fileToUpload.size / CHUNK_SIZE);
+    // setTotalChunksToUpload(totalChunks);
+    console.log("totalChunks =====", totalChunks);
 
+    // while (offset < fileToUpload.size) {
+      // console.log('CHUNK_SIZE -=====', CHUNK_SIZE)
+      // console.log('offset -=====', offset)
+      // console.log('offset + CHUNK_SIZE -=====', offset + CHUNK_SIZE)
+      // console.log('====================*****************===================')
 
-    while (offset < fileToUpload.size) {
       const nextChunk = fileToUpload.slice(offset, offset + CHUNK_SIZE);
-      console.log("offset ===", offset);
+      // const fileChunkDa = new File([nextChunk], fileToUpload.name);
+      // console.log("nextChunk ---", fileChunkDa);
+
+      console.log("nextChunk ===", nextChunk);
       fileWorker.postMessage({
-        fileData: nextChunk,
+        fileData: fileToUpload,
         key,
-        fileName: fileToUpload.name,
+        filename: fileToUpload.name,
         index,
+        totalChunks,
+        fileSize: fileToUpload.size
       });
       offset += CHUNK_SIZE;
-      index++
-    }
+      index++;
+    // }
 
     // }
 
